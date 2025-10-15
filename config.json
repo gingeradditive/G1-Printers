@@ -1,0 +1,14 @@
+{
+  "G1 Rev1": {
+    "template": "G1-TEMPLATE",
+    "prefix": "G1"
+  },
+  "G1 Rev2": {
+    "template": "G1R2-TEMPLATE",
+    "prefix": "G1R2"
+  },
+  "G1 Rev2 (Servo)": {
+    "template": "G1R2-TEMPLATESERVO",
+    "prefix": "G1R2"
+  }
+}
