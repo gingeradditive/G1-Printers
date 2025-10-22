@@ -96,6 +96,9 @@ def main():
     )
     parser.add_argument("--dry-run", action="store_true", help="Simula le operazioni senza modificare nulla")
     parser.add_argument("--no-commit", action="store_true", help="Crea solo la cartella, senza fare commit o push Git")
+    parser.add_argument("--type", type=int, help="Indice del tipo di macchina (1 = primo nel config.json)")
+    parser.add_argument("--serial", type=str, help="Seriale macchina, es. G1-0025-25")
+
     args = parser.parse_args()
 
     print("=== Creazione nuova configurazione macchina ===")
@@ -105,10 +108,25 @@ def main():
         print("⚙️ Modalità NO-COMMIT attiva (niente Git commit/push).")
 
     config = load_config()
-    model_name, model_conf = ask_machine_type(config)
 
-    suggested_serial = suggest_serial(model_conf["prefix"])
-    serial = input(f"Inserisci seriale [{suggested_serial}]: ").strip() or suggested_serial
+    # --- Se specificato da CLI, salta wizard ---
+    if args.type is not None:
+        keys = list(config.keys())
+        if args.type < 1 or args.type > len(keys):
+            sys.exit(f"❌ Tipo macchina non valido. Usa un numero tra 1 e {len(keys)}.")
+        model_name = keys[args.type - 1]
+        model_conf = config[model_name]
+        print(f"➡️  Selezionato tipo macchina: {model_name}")
+    else:
+        model_name, model_conf = ask_machine_type(config)
+
+    # --- Serial ---
+    if args.serial:
+        serial = args.serial
+    else:
+        suggested_serial = suggest_serial(model_conf["prefix"])
+        serial = input(f"Inserisci seriale [{suggested_serial}]: ").strip() or suggested_serial
+
     new_folder = serial
 
     copy_template(model_conf["template"], new_folder, dry_run=args.dry_run)
