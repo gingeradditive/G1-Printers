@@ -19,8 +19,7 @@ For example: `G1R2-0042-25` → model **G1 Rev2**, serial number **42**, year **
 
 ## 🧰 Adding a New Machine Configuration
 
-A helper script called `addnewmachine.py` automates the creation of new machine configuration folders.  
-It copies the correct template, assigns or accepts a serial number, and can optionally commit and push the changes to Git.
+A helper script called `addnewmachine.py` automates the creation of new machine configuration folders for **G1 Rev1** machines. It assigns or accepts a serial number, and can optionally commit and push the changes to Git.
 
 ---
 
@@ -56,14 +55,13 @@ Example `config.json`:
 Run the script from the root of the repository:
 
 ```bash
-python3 new_machine.py
+python3 addnewmachine.py
 ```
 
 You will be prompted to:
-1. Select the machine type (e.g. G1 Rev1, G1 Rev2, etc.)
-2. Confirm or override the suggested serial number
-3. The script will copy the appropriate template and create a new folder
-4. Optionally, it will commit and push the new configuration to Git
+1. Confirm or override the suggested serial number
+2. The script will copy the G1 Rev1 template and create a new folder
+3. Optionally, it will commit and push the new configuration to Git
 
 ---
 
@@ -71,7 +69,6 @@ You will be prompted to:
 
 | Option | Description |
 |---------|-------------|
-| `--type <N>` | Select the machine type by index (1 = first entry in `config.json`) |
 | `--serial <SERIAL>` | Specify the serial directly (e.g. `G1-0025-25`) |
 | `--dry-run` | Simulate all actions without making any changes |
 | `--no-commit` | Create the folder only, skip Git add/commit/push |
@@ -83,22 +80,22 @@ You will be prompted to:
 
 **Interactive mode (default):**
 ```bash
-python3 new_machine.py
+python3 addnewmachine.py
 ```
 
 **Fully automated (non-interactive):**
 ```bash
-python3 new_machine.py --type 2 --serial G1R2-0042-25
+python3 addnewmachine.py --serial G1-0025-25
 ```
 
 **Simulate actions without writing anything:**
 ```bash
-python3 new_machine.py --type 1 --serial G1-0100-25 --dry-run
+python3 addnewmachine.py --serial G1-0100-25 --dry-run
 ```
 
 **Skip Git operations:**
 ```bash
-python3 new_machine.py --type 3 --serial G1R2-0075-25 --no-commit
+python3 addnewmachine.py --serial G1-0075-25 --no-commit
 ```
 
 ---
