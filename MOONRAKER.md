@@ -17,7 +17,7 @@ Conseguenze:
 
 ## I due formati
 
-L'unica differenza è la sezione di crowsnest (la webcam).
+Le differenze sono due: la sezione di crowsnest (la webcam) e i servizi riavviati dopo un aggiornamento di GingerConfigs.
 
 **Formato vecchio**: sezione scritta nel file, senza `primary_branch`:
 ```ini
@@ -34,13 +34,27 @@ is_system_service: True
 [include moonraker-crowsnest.conf]
 ```
 
+### 1. crowsnest
+
 Il formato nuovo corregge il bug B26 di G1OS: crowsnest tiene un branch per ogni versione maggiore (`master` = v4, `v5`, in futuro `v6`…). Senza `primary_branch` Moonraker si aspetta `master`, mentre le immagini recenti installano v5; Mainsail propone un Recover che installa la v4 e il servizio crowsnest non parte più. Le immagini G1OS nuove copiano in `moonraker-crowsnest.conf` la sezione fornita da crowsnest stesso, con il branch giusto per la versione installata.
+
+### 2. GingerConfigs
+
+Formato vecchio: `managed_services = klipper`. Formato nuovo:
+```ini
+[update_manager GingerConfigs]
+...
+managed_services = klipper GingerConfigs
+```
+Dopo un aggiornamento o un Recover di GingerConfigs Moonraker riavvia anche g1-flask: senza riavvio il server continua a girare col codice vecchio, e dopo un Recover (che ricrea la cartella `~/G1-Configs`) la pagina INIT risponde con errore 500. Il nome `GingerConfigs` funziona solo sulle immagini che hanno l'alias `GingerConfigs.service` di g1-flask e la riga `GingerConfigs` in `~/printer_data/moonraker.asvc`, entrambi creati da `install.sh` di G1-Configs durante la build. Sulle immagini vecchie Moonraker mostra l'avviso `Moonraker is not permitted to restart service 'GingerConfigs'` e non riavvia più nemmeno klipper dopo gli aggiornamenti di GingerConfigs: non blocca la stampante, ma è un motivo in più per seguire la regola qui sotto.
+
+### Il template
 
 Il formato nuovo è il `Configs/moonraker.conf` di G1-Configs copiato così com'è: per creare o aggiornare un file nel formato nuovo si copia quel template (o `G1-TEMPLATE/moonraker.conf`, che è uguale).
 
 ## La regola
 
-> Il formato nuovo va **solo** nella cartella di una stampante che ha già la SD con un'immagine G1OS che crea `moonraker-crowsnest.conf`.
+> Il formato nuovo va **solo** nella cartella di una stampante che ha già la SD con un'immagine G1OS che crea `moonraker-crowsnest.conf` e `GingerConfigs.service`.
 
 Sulle immagini vecchie (3.0.1 e precedenti) quel file non esiste. Se una di queste stampanti riceve il formato nuovo, Moonraker non parte (`No files matching include directive [include moonraker-crowsnest.conf]`): Mainsail non si collega, non si possono usare UPDATE G1 né Recover, e si recupera solo via SSH.
 
@@ -53,9 +67,10 @@ Per questo **non si convertono tutte le cartelle insieme**: ogni cartella si agg
 Via SSH (`ssh pi@<ip>`):
 ```bash
 ls ~/printer_data/config/moonraker-crowsnest.conf   # esiste → immagine nuova
+systemctl cat GingerConfigs.service | head -1        # risponde → immagine nuova
 cat /etc/g1os-release                                # es. "G1OS release 3.0.1 (trixie)"
 ```
-Fa fede la presenza di `moonraker-crowsnest.conf`.
+Fanno fede i primi due comandi: devono rispondere entrambi. Le build di sviluppo del 22/10/2026 hanno solo il primo; nessuna è in campo.
 
 ### Quali cartelle sono già nel formato nuovo
 
@@ -66,7 +81,7 @@ grep -l "include moonraker-crowsnest.conf" */moonraker.conf
 ## Procedura: rifare la SD di una stampante
 
 1. Flashare la SD con l'immagine G1OS nuova e avviare la stampante.
-2. Controllare che esista `~/printer_data/config/moonraker-crowsnest.conf` (vedi sopra). Se manca, **fermarsi**: l'immagine è vecchia.
+2. Controllare che esistano `~/printer_data/config/moonraker-crowsnest.conf` e `GingerConfigs.service` (vedi sopra). Se uno manca, **fermarsi**: l'immagine è vecchia.
 3. Fare INIT con il numero di serie della stampante.
 4. In questo repo copiare `G1-TEMPLATE/moonraker.conf` sopra `<SERIALE>/moonraker.conf`, solo per quella cartella, e fare commit e push su `main`:
    ```bash
@@ -77,7 +92,7 @@ grep -l "include moonraker-crowsnest.conf" */moonraker.conf
    ```
    I passi 3 e 4 si possono invertire: conta che il formato nuovo arrivi dopo il flash.
 5. Nella pagina di g1-flask premere UPDATE G1, poi riavviare Moonraker (o la stampante).
-6. Verificare: Mainsail si collega, nessun avviso su crowsnest nell'Update Manager, `git -C ~/crowsnest branch --show-current` risponde col branch di default di crowsnest (oggi `v5`).
+6. Verificare: Mainsail si collega, nessun avviso su crowsnest o GingerConfigs nell'Update Manager, `git -C ~/crowsnest branch --show-current` risponde col branch di default di crowsnest (oggi `v5`).
 
 ## Stampanti nuove
 
@@ -96,6 +111,7 @@ Il file viene dalla versione di crowsnest installata, quindi ha il branch giusto
 
 ## Riferimenti
 
-- G1OS, `docs/known-issues.md`: B26 (crowsnest) e i bug correlati.
+- G1OS, `docs/known-issues.md`: B26 (crowsnest), B34 (riavvio di g1-flask) e i bug correlati.
 - G1OS `modules/generic/53-crowsnest`: crea `moonraker-crowsnest.conf`.
+- G1-Configs `install.sh`: crea `g1-flask.service` con l'alias `GingerConfigs.service` e la riga in `moonraker.asvc`.
 - G1-Configs `Flask/scripts/checkforupdate_script.py` e `update_script.py`: UPDATE G1.
